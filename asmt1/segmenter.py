@@ -109,15 +109,6 @@ def improved_segmenter(tokens: list[str]) -> list[list[str]]:
         nxt = next_token(i)
         return nxt == "."
     
-    # dot at the end of a two-letter initialism (e.g., "U.S.")
-    def is_two_letter_initialism_end(i: int) -> bool:
-        return (
-            i >= 3
-            and is_initial(tokens[i - 1])
-            and tokens[i - 2] == "."
-            and is_initial(tokens[i - 3])
-        )
-    
     # dot after single-letter initial
     def is_middle_initial_case(i: int) -> bool:
         prev_tok = previous_token(i)
@@ -163,8 +154,6 @@ def improved_segmenter(tokens: list[str]) -> list[list[str]]:
                 return False
             if is_abbreviation(previous_token(i)):
                 return False
-            if is_two_letter_initialism_end(i):
-                return False 
             if is_initialism_chain(i):
                 return False
             if is_middle_initial_case(i):
