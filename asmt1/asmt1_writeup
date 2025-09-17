@@ -1,0 +1,44 @@
+Part 1.1
+
+Why is it that the code only finds 'alice' 221 times instead of the 398 times it actually appears?
+
+As discussed in class the frequency function may not account for special characters such as apostraphes or commas where the word alice may vary.
+This ultimately makes it difficult to account for all instances of the word.
+
+Part 1.5
+
+Most frequent word: Loop through all the files the gutenberg directory that end in .txt. Is the always the most common word? If not, what are some other words that show up as the most frequent word?
+
+The most frequent word in all the .txt files in the gutenberg directory is 'the' appearing 133,638 times followed by 'and', 'of', 'to', 'a', 'in', and 'i'. 
+
+
+
+Impact of lowercasing: If you don’t lowercase all the words before you count them, how does this result change, if at all?
+
+If you do not lowercase all the words the most common word is still 'the' with 125,792 instances, followed by the words 'and', 'of', 'to', 'a', 'in', and 'I'. The result does not change much but the appearances of each word are significantly lowered, the maain difference being that the word 'I' is most frequent when it is capatalized rather than 'i' lowercased. Additionally the tenth most popular word is 'his' when the tokens are case-sensitive compared to 'it' when all words are lowercased.
+
+
+2.5 Segmentation Questions
+
+Describe (using the metrics from the evaluation script) the performance of your final segmenter.
+
+Editorial: 97.33% percision, 99.37% recall, and 98.34% F
+Lore: 98.51% percision, 99.44% recall, and 98.97% F
+Fiction: 99.90% percision, 99.53% recall, and 99.72% F
+This indicates that my segmentor predicts the end of a sentence correct almost every time, it is also catching almost every sentence boundary, and my accuracy is pretty high in the 95+%.
+
+
+Describe at least three things that your final segmenter does better than the baseline segmenter. What cases are you most proud of catching in your segmenter? Include specific examples that are handled well.
+
+Baseline took every instance of "." as the end of a sentance, my segmentor try to catch cases such as Titles, Middle initials and more.
+Baseline would split digits such as decimals and time, mine fixes that by respecting does boundaries for what they are.
+Baseline also took elipses as multiple boundaries, mine tries to keep the elipses together.
+
+
+Describe at least three places where your segmenter still makes mistakes. Include specific examples where your segmenter makes the wrong decision. If you had another week to work on this, what would you add? If you had the rest of the semester to work on it, what would you do?
+
+My segmenter is still not able to catch all ":" as non-boundaries, for example in the sentence "He said: "I am here.""
+It also still has trouble with some titles such as "Dr." and "Mr.".
+Finally it still has trouble with some abbreviations such as "etc." and "i.e.".
+If I had another week to work on it I would try to add more rules to catch these specific cases. If I had the rest of the semester I would try to implement a machine learning approach to improve accuracy even further.
+
