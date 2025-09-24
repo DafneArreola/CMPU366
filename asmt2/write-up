@@ -1,0 +1,16 @@
+1. Try running generate_text (in random mode) to add 10 tokens for three text contexts of your choice. What are the results? 
+    output 1: an agreeable face ; and on conversing with him , or concealed
+    output 2: she could not see why miss fairfax , who did not see her
+    output 3: just as she said she softly . " such a point -- and 
+
+2. How does the output look? If you’re familiar with Austen’s writing, does it sound like her? Does it sound like any writer who knows English? What issues do you see? 
+    The outputs of generate_text seem to look like well written englis. However upon reading them the sentences seem odd. The lines sound a little like Jane Austen with familiar words, semicolons, and dashes but they don’t hold together as full sentences. That’s because the program only looks at a tiny bit of context at a time, so it can’t keep a longer thought going and often trails off or repeats (like in output two where it repeats "not see"). There is also rough edges like odd spaces before punctuation, missing capitalization for names (e.g miss fairfax), and quotes or dashes that don’t quite match. So it reads like English in short bursts, but not polished.
+
+Run your calc_text_perplexity on the provided austen-sense.txt file (Sense and Sensibility). What do you observe? 
+    When I run calc_text_perplexity on the provided austen-sense.txt file the output I receive is "inf'. This is because the model thinks parts of Sense are “impossible,” so it can’t give a meaningful difficulty score. This is because the model is trained only on Emma and Persuasion encounters at least one three-word sequence in Sense and Sensibility it has never saw before. With this simple method, any “unseen” sequence is treated as having zero chance of occurring and multiplying by a zero chance makes the overall score blow up to infinity.
+
+3. Of the texts that are not written by Austen, which is the most similar to the Austen training text? (You may want to use iterdir() like we did on Assignment 1 to iterate through the provided files.) 
+    Shakespeare's Macbeth is the most similar to the Austen-trained model with a preplexity of ≈ 4.62. Its 19th-century prose style, syntax, and vocabulary are closest to Austen. 
+
+4. There are three authors with three texts apiece in the dataset: Austen, Chesterton, and Shakespeare. For each author, train your n-gram model using two of the texts per author, and test on the held-out third text. Which author’s writing is the most consistent? Your writeup should include details about which texts were used to train and test.
+    Cycling through all train-two/test-one splits per author, the held-out perplexity averages were: Austen ≈ 10.30, Chesterton ≈ 6.82, Shakespeare ≈ 4.37 . Concretely, for each fold I trained on two works by the same author (e.g., for Shakespeare: train on Hamlet + Macbeth, test on Julius Caesar, and so on). With the lowest average held-out perplexity, Shakespeare is the most consistent under this trigram model.
