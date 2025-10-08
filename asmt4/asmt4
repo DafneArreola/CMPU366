@@ -1,0 +1,176 @@
+#!/usr/bin/env python3
+
+import os
+import requests
+from pathlib import Path
+from typing import Iterable, List, Tuple
+from spacy.lang.en import English
+
+# ---- Part 1: Train Word2Vec on KJV Bible ----
+
+# Step 1: Download KJV Bible
+URL = "https://www.cs.vassar.edu/~cs366/data/bible-kjv.txt"
+OUT = Path("bible-kjv.txt")
+
+# Fetch the KJV Bible text from Project Gutenberg
+resp = requests.get(URL, timeout=60)
+resp.raise_for_status()  # throws if not 200 OK
+bible = resp.text
+
+# Save locally so you don’t re-download later parts
+OUT.write_text(bible, encoding="utf-8")
+print(f"Saved to {OUT.resolve()}")
+
+# Step 2: Prepare Text for Word2Vec
+
+# Initialize Spacy English tokenizer
+nlp = English(pipeline=[])
+nlp.add_pipe("sentencizer")
+
+# Get Sentences helper function
+def get_sentences(text: str) -> list[list[str]]:
+    """Split text into sentences, each sentence = list of lowercase tokens."""
+    sents = []
+    for para in text.split("\n\n"):        # split by paragraphs so sentences don't cross them
+        doc = nlp(para.replace("\n", " ")) # merge single newlines into spaces
+        for sent in doc.sents:
+            tokens = [
+                tok.text.lower().strip()
+                for tok in sent
+                if not tok.is_space        # skip spaces
+            ]
+            if tokens:                     # avoid empty sentences
+                sents.append(tokens)
+    return sents
+
+# Get sentences from the KJV Bible text
+bible = Path("bible-kjv.txt").read_text(encoding="utf-8")
+sentences = get_sentences(bible)
+print(f"Got {len(sentences)} sentences from KJV Bible")
+print(f"First sentence: {sentences[0]}")
+
+# Step 3: Train Word2Vec Model
+
+from gensim.models import Word2Vec
+
+# Train Word2Vec model
+bible_model = Word2Vec(
+    sentences = sentences,
+    vector_size=100,  # size of word vectors
+    window=2,         # context window size
+    epochs=25,        # number of training epochs
+    workers=os.cpu_count() or 1,  # use all CPU cores
+    seed=42          # for reproducibility
+)
+
+bible_vectors = bible_model.wv
+# print(f"Vocabulary size: {len(bible_vectors)}")
+# print(f"Vector for 'god': {bible_vectors['god'][:5]}...")
+
+# Finding most similar words
+
+# Simple printing
+# print(f"Most similar to 'garden': {bible_vectors.most_similar('garden', topn=5)}")
+# print(f"Most similar to 'woman': {bible_vectors.most_similar('woman', topn=5)}")
+# print(f"Most similar to 'well': {bible_vectors.most_similar('well', topn=5)}")
+# print(f"Most similar to 'cast': {bible_vectors.most_similar('cast', topn=5)}")
+# print(f"Most similar to 'money': {bible_vectors.most_similar('money', topn=5)}")
+
+# Train Word2Vec model2 with window=10 for comparison
+bible_model2 = Word2Vec(
+    sentences = sentences,
+    vector_size=100,  # size of word vectors
+    window=10,         # context window size
+    epochs=25,        # number of training epochs
+    workers=os.cpu_count() or 1,  # use all CPU cores
+    seed=42          # for reproducibility
+)
+bible_vectors2 = bible_model2.wv
+
+words_to_check = ["garden", "woman", "well", "cast", "money"]
+topn = 5
+
+# for word in words_to_check:
+#     print(f"Most similar to '{word}':")
+#     sims1 = bible_vectors.most_similar(word, topn=topn) if word in bible_vectors.key_to_index else []
+#     sims2 = bible_vectors2.most_similar(word, topn=topn) if word in bible_vectors2.key_to_index else []
+
+#     print("  2".ljust(25), "10")
+#     for i in range(topn):
+#         left = f"{sims1[i][1]:0.2f} {sims1[i][0]}" if i < len(sims1) else "(OOV)"
+#         right = f"{sims2[i][1]:0.2f} {sims2[i][0]}" if i < len(sims2) else "(OOV)"
+#         print(f"  {left.ljust(22)}  {right}")
+#     print()
+    
+# Observation:
+# When the window is small (window=2), the model only looks at a few words around each word.
+# That means it mostly learns about short, repeated word patterns or phrases.
+# For example, “chamber” and “pool” often appear near “garden,” or “child” and “damsel”
+# appear near “woman.” These are close, sentence-level connections.
+#
+# When the window is large (window=10), the model looks at a much wider range of surrounding words.
+# This helps it find bigger-picture or topic-level relationships.
+# For example, “vine,” “eden,” and “trees” are all conceptually related to “garden,”
+# while “husband” and “maid” relate to “woman.” These show broader, meaning-based links.
+#
+# In short: small windows capture nearby word patterns,
+# while large windows capture overall themes and meanings in the text.
+
+# ---- Part 2: Explore Google News model ----
+import gensim.downloader as gensim_api
+
+print("Loading Google News Word2Vec (300d)...")
+gnews = gensim_api.load("word2vec-google-news-300")
+print("Loaded. Vocab size:", len(gnews.key_to_index))
+
+# Check if a token exists in any given model
+def exists(token: str, model) -> bool:
+    """Return True if token is in the model's vocabulary."""
+    return token in model.key_to_index
+
+# Show most similar words for any model, with robust OOV handling
+def show_similar(title: str, token: str, topn: int = 10):
+    """Print the top-N most similar words to `token` using the given model."""
+    print(f"\n{title}: {token}")
+    if token not in gnews.key_to_index:
+        print("(OOV / not in vocabulary)")
+        return
+    sims = gnews.most_similar(token, topn=topn)
+    for w, s in sims:
+        print(f"- {s:0.2f} {w}")
+
+def analogy(title: str, positive, negative, topn: int = 5):
+    print(f"\nAnalogy: {title}")
+    try:
+        res = gnews.most_similar(positive=positive, negative=negative, topn=topn)
+        for w, s in res:
+            print(f"- {s:0.2f} {w}")
+    except KeyError as e:
+        print("(OOV) Skipped:", e)
+
+# A) At least one word and one multi-word expression with “appropriate” neighbors.
+# Word examples (usually coherent):
+show_similar("Good (word)", "violin")
+show_similar("Good (word)", "neuroscience")
+
+# Multi-word examples:
+show_similar("Good (MWE)", "Artificial_Intelligence")
+show_similar("Good (MWE)", "New_York")
+
+
+# B) Two tokens where results include something strange (polysemy, rare forms, culture-specific noise).
+show_similar("Odd", "python")     # language vs animal
+show_similar("Odd", "mercury")    # planet vs element vs newspaper
+
+# C) Analogies that work reasonably well (create your own, not from lecture).
+# Country–capital style
+analogy("spain : madrid :: italy : ?", positive=["italy", "madrid"], negative=["spain"])
+analogy("japan : tokyo :: france : ?", positive=["france", "tokyo"], negative=["japan"])
+
+# Brand–product family
+analogy("iphone : apple :: galaxy : ?", positive=["galaxy", "apple"], negative=["iphone"])
+analogy("civic : honda :: corolla : ?", positive=["corolla", "honda"], negative=["civic"])
+
+# D) Analogies that fail amusingly (or go off-topic).
+analogy("bitcoin : digital :: cash : ?", positive=["cash", "digital"], negative=["bitcoin"])
+analogy("dog : bark :: cat : ?", positive=["cat", "bark"], negative=["dog"])
