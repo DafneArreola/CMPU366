@@ -1,0 +1,7 @@
+hf_xet
+numpy
+pillow>=10.0
+pytest
+torch
+tqdm
+transformers
